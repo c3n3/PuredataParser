@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/caden/code/cpp/PuredataParser/build",
+  "command": "/usr/bin/g++-9    -g   -o CMakeFiles/PuredataParser.dir/main.cpp.o -c /home/caden/code/cpp/PuredataParser/main.cpp",
+  "file": "/home/caden/code/cpp/PuredataParser/main.cpp"
+}
+]

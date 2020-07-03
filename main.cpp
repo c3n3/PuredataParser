@@ -1,20 +1,20 @@
-nclude <iostream>
+#include <iostream>
 #include "PuredataFile.h"
 #include <vector>
-
-int main(int argc, char* argv[])
+#include "Timer.h"
+int main(int argc, char *argv[])
 {
-
-	    std::vector<PuredataFile> files;
-	        files.reserve(argc - 1);
-		    for (int i = 1; i < argc; i++) {
-			            files.push_back(PuredataFile(argv[i]));
-				        }
-		        std::cout << files[0].objects[0] << "\n";
-
-
-			    for (int i = 0; i < files.size(); i++) {
-				            files[i].toString();
-					        }
-			        return 0;
+    Timer t;
+    std::vector<PuredataFile> files;
+    if (argc == 1) {
+        std::cout << "You must input a file name(s) to command line args \n";
+        return -1;
+    }
+    files.reserve(argc - 1);
+    for (int i = 1; i < argc; i++)
+    {
+        files.push_back(PuredataFile(argv[i]));
+    }
+    PuredataFile::generateFile(files, "Master.pd");    
+    return 0;
 }
