@@ -51,6 +51,8 @@
         "sstream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
-        "bit": "cpp"
+        "bit": "cpp",
+        "thread": "cpp",
+        "typeinfo": "cpp"
     }
 }
