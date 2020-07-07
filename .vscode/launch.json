@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": ["./pd/Distortion.pd", "./pd/Viola.pd"],
+            "args": ["./pd/Distortion.pd", "./pd/Viola.pd", "./pd/Fuzz.pd", "./pd/Synth.pd"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

@@ -11,6 +11,16 @@ using namespace std::string_literals;
 
 #define TAB_TO_SPACES 4
 
+ int charPtrToInt(const char* str, int length) {
+     int ret = 0;
+     for (int i = 0; i < length; i++) {
+         ret *= 10;
+         ret += (str[i] - '0');
+     }
+     return ret;
+ }
+
+
 int resize(char** str, int newSize) {
     Timer t("Resize -> ");
 	char* temp = (char*)realloc(*str, sizeof(char) * newSize);
@@ -75,6 +85,31 @@ void replaceNumberWithNumber(char** str, int number, int startIndex, int& buflen
     }
 }
 
+void offsetNumberWithNumber(char** str, int offset, int startIndex, int& buflen) {
+    int end;
+    int dig;
+    for (end = startIndex; end < strlen(*str) && ((*str)[end] > '/' && (*str)[end] < ':'); end++);
+    if (end == startIndex) return;
+    int target = charPtrToInt(&(*str)[startIndex], end - startIndex);
+    int number = target + offset;
+    end--;
+    while (number > 0) {
+        dig = number % 10;
+        number = number / 10;
+        if (startIndex > end) { // we need to resize as the string needs a number with more chars than original
+            int spaces = 0;
+            int temp = number;
+            for (;temp != 0; temp /= 10) {spaces++;};
+            expand(str, startIndex, spaces + 1, buflen);
+            end += spaces + 1;
+        }
+        (*str)[end--] = dig + '0';
+    }
+    if (startIndex < end) {
+        shrink(*str, startIndex, end - startIndex + 1);
+    }
+}
+
 void concat(char** buf, int index, int& buflen, const char* add) {
     if (index + strlen(add) > buflen) {
         buflen *= 2;
@@ -85,14 +120,22 @@ void concat(char** buf, int index, int& buflen, const char* add) {
     }
 }
 
+
+
 int main() {
+    // const char* a = "2";
+    // std::cout << charPtrToInt(a, 1) * 2 << " <- num\n";
     // char* buf = malloc(sizeof(char) * 50);
     int bufLen = 5000;
     char* test = (char*)malloc(sizeof(char) * bufLen);
-     strcpy(test, "#X connect 498 82734 293847 992");
+     strcpy(test, "#X connect 2000 82734 293847 992");
      {
          Timer l("Concat -> ");
-        concat(&test, strlen(test), bufLen, "\nHello this is a thing that I can do because I am a coolness of the earth");
+        // concat(&test, strlen(test), bufLen, "\nHello this is a thing that I can do because I am a coolness of the earth");
+     }
+     {
+         Timer l("Offset -> ");
+        offsetNumberWithNumber(&test, 1000000, 11, bufLen);
      }
     std::cout << test << "\n";
 }

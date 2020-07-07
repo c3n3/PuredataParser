@@ -6,15 +6,13 @@
 #include <string>
 #include <regex>
 #include <iostream>
+#include "buffer_functions.h"
 using namespace std::string_literals;
 
-struct PdObject {
-    std::string line;
-    int number;
-    PdObject(const char* line, int number): line(line), number(number) {
-    }
-};
-
+/**
+ * @brief The pure data file
+ * 
+ */
 class PuredataFile
 {
 public:
@@ -25,7 +23,7 @@ public:
     int inputObject;
     int outputObject;
     void toString();
-    PuredataFile(const char * name);
+    PuredataFile(const char * name, int offset);
     int offset(int startIndex);
     void restringConnects(const std::string& objectNumber, const std::string& replace);
     void cleanConnects();
@@ -33,6 +31,12 @@ public:
     static void generateFile(std::vector<PuredataFile*>& files, const char* name);
 };
 
+/**
+ * @brief This pairs all together
+ * 
+ * @param files 
+ * @param name 
+ */
 void PuredataFile::generateFile(std::vector<PuredataFile*>& files, const char* name) {
     std::ofstream out(name);
     out << "#N canvas 2521 143 995 666 12;\n";
@@ -43,10 +47,11 @@ void PuredataFile::generateFile(std::vector<PuredataFile*>& files, const char* n
     for (int i = 0; i < files.size(); i++) {
         // std::cout << "\n\nBEFORE";
         // files[i].printConnects();  
-        startIndex = files[i]->offset(startIndex);
+        // startIndex = files[i]->offset(startIndex);
         // std::cout << "\n\nAfter";
         // files[i].printConnects();
-
+        // files[i]->toString();
+        startIndex += files[i]->objectCount;
         out << files[i]->objects << "\n";
     }
 
@@ -65,7 +70,7 @@ void PuredataFile::generateFile(std::vector<PuredataFile*>& files, const char* n
     out << "#X connect " << files[files.size() - 1]->outputObject << " 0 " << dacIndex << " 1;\n";
     out << "#X connect " << startIndex + 3 << " 0 " << startIndex + 2 << " 0;\n";
 
-    // input all the standar connects
+    // input all the standard connects
     for (int i = 0; i < files.size(); i++) {
         out << files[i]->connects << "\n";
     }
@@ -77,63 +82,48 @@ void PuredataFile::generateFile(std::vector<PuredataFile*>& files, const char* n
     out.close();
 }
 
-int PuredataFile::offset(int startIndex) {
-    if (startIndex == 0) return objectCount;
-    inputObject += startIndex;
-    outputObject += startIndex;
-    for (int i = 0; i < objectCount; i++) {
-        restringConnects(std::to_string(i), std::to_string(i + startIndex));
-    }
-    cleanConnects();
-    return startIndex + objectCount;
-}
-
-void PuredataFile::printConnects() {
-    std::cout << "\n\n ******************** Connnects below: ********************************\n";
-    std::cout << connects << "\n";
-}
-
-void PuredataFile::cleanConnects() {
-    std::regex r("\\[}", std::regex_constants::optimize);
-    connects = std::regex_replace(connects, r, "");
-}
-
-void PuredataFile::restringConnects(const std::string& objectNumber, const std::string& replace) {
-    std::regex r("((t )"s + objectNumber + "( )|( )" + objectNumber + "( \\d;))"s, std::regex_constants::optimize);
-    std::string rp = "$2$4[}"s + replace + "$3$5"s;
-    connects = std::regex_replace(connects, r, rp);
-}
-
-PuredataFile::PuredataFile(const char *name)
+/**
+ * @brief Construct a new Puredata File:: Puredata File object
+ * 
+ * @param name of file
+ * @param offset the starting object number that all must 
+ */
+PuredataFile::PuredataFile(const char *name, int offset)
 {
+    Timer t("File Time -> ");
     FILE *f;
     f = fopen(name, "r");// // read mode
-    // std::cout << "File: " << f << " name: " << name << "\n";
+#if DEBUG
+    std::cout << "File: " << f << " name: " << name << "\n";
+#endif
     if (f == NULL)
     {
         return;
     }
-    char c;
-    char buf[100];
-    int conBufLen = 5000;
-    int objBufLen = 5000;
+    int c;
+    int bufLen = 100;
+    char* buf = (char*)malloc(sizeof(char) * bufLen);
+    int conBufLen = 1000;
+    int objBufLen = 1000;
 
     // the index
     int oi = 0;
-    objects = (char*)malloc(sizeof(char) * objBufLen);
+    
+    objects = (char*)calloc(objBufLen, sizeof(char));
 
     //the index
     int ci = 0;
-    connects = (char*)malloc(sizeof(char) * conBufLen);
+    connects = (char*)calloc(conBufLen, sizeof(char));
 
+    if (!connects || !objects) {
+        std::cout << "\n\n*********************************FAIL DUE TO CALLOC****************************";
+        std::cout << "\n*********************************FAIL DUE TO CALLOC****************************";
+        std::cout << "\n*********************************FAIL DUE TO CALLOC****************************\n\n";
+    }
 
     outputObject = 0;
     inputObject = 0;
     objectCount = 0;
-    std::regex obj("#X");
-    std::regex connect("#X connect");
-    std::regex out("1.0002");
-    std::regex in("1.0001");
     int index = -1; // the start of each file has a header so we start at -1
     bool onConnects = false;
     for (int i = 0; (c = fgetc(f)) != EOF; i++)
@@ -141,37 +131,59 @@ PuredataFile::PuredataFile(const char *name)
         buf[i] = c;
         if (c == ';')
         {
-            
             buf[i + 1] = fgetc(f); // there is a new line after the semi colon
             buf[i + 2] = 0;
             i = -1;
-            if (onConnects || std::regex_search(buf, connect))
+
+            if (onConnects || (buf[3] == 'c' && buf[4] == 'o'))
             {
                 onConnects = true;
-                concat(&connects, ci++, conBufLen, buf);
+                int i = 0;
+                int spaces = 0;
+                for (;offset != 0 && spaces < 5; i++) {
+                    if (buf[i] == ' ') {
+                        spaces++;
+                    }
+                    if (spaces == 2 || spaces == 5) {
+                        spaces++;
+                        offsetNumberWithNumber(&buf, offset, i + 1, bufLen);
+                    }
+                }
+                concat(&connects, ci, conBufLen, buf);
+                ci += strlen(buf);
             }
-            else if (std::regex_search(buf, obj))
+            else if (buf[1] == 'X')
             {
-                concat(&connects, ci++, conBufLen, buf);
                 objectCount++;
-                objects += buf;
+                concat(&objects, oi, objBufLen, buf);
+                oi += strlen(buf);
             }
-            if (!onConnects && std::regex_search(buf, in))
+            if (!onConnects && ( buf[23] == '1' && buf[18] == '1' && buf[19] == '.' && buf[20] == '0' && buf[21] == '0' && buf[22] == '0'))
             {
-                inputObject = index;
+                inputObject = index + offset;
             }
-            else if (!onConnects && std::regex_search(buf, out))
+            else if (!onConnects && (buf[23] == '2' && buf[18] == '1' && buf[19] == '.' && buf[20] == '0' && buf[21] == '0' && buf[22] == '0'))
             {
-                outputObject = index;
+                outputObject = index + offset;
             }
             index++;
         }
     }
     fclose(f);
+#if DEBUG
+    std::cout << "object BUF usage: " << strlen(objects) << " / " << objBufLen << " = " <<(strlen(objects)* 1.0) / objBufLen << "\n";
+    std::cout << "connects BUF usage: " << strlen(connects) << " / " << conBufLen << " = " <<(strlen(connects)* 1.0) / conBufLen << "\n";
+#endif
 }
 
+/**
+ * @brief print file
+ * 
+ */
 void PuredataFile::toString()
 {
+    std::cout << "********************************OBJECTS***********************************\n";
     std::cout << objects << "\n";
+    std::cout << "********************************CONNECTS***********************************\n";
     std::cout << connects << "\n";
 }

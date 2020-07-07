@@ -38,10 +38,10 @@ int expand(char** str, int start, int moves, int& bufLen) {
     for (int i = start; i < start + moves; i++) {
         (*str)[i] = '_';
     }
-
+    return 1;
 }
 
-int shrink(char* str, int start, int len) {
+void shrink(char* str, int start, int len) {
 	for (int k = 0; k < len; k++) {
 		int length = strlen(str);
 		for (int i = length - 1; i >= start; i--) {
@@ -50,6 +50,7 @@ int shrink(char* str, int start, int len) {
 			str[length] = temp;
 		}
 	}
+
 }
 
 void concat(char** buf, int index, int& buflen, const char* add) {
@@ -86,3 +87,40 @@ void replaceNumberWithNumber(char** str, int number, int startIndex, int& buflen
     }
 }
  
+ void isNumber(const char * str, int number) {
+     
+ }
+
+ int charPtrToInt(const char* str, int length) {
+     int ret = 0;
+     for (int i = 0; i < length; i++) {
+         ret *= 10;
+         ret += (str[i] - '0');
+     }
+     return ret;
+ }
+
+ void offsetNumberWithNumber(char** str, int offset, int startIndex, int& buflen) {
+    int end;
+    int dig;
+    for (end = startIndex; end < strlen(*str) && ((*str)[end] > '/' && (*str)[end] < ':'); end++);
+    if (end == startIndex) return;
+    int target = charPtrToInt(&(*str)[startIndex], end - startIndex);
+    int number = target + offset;
+    end--;
+    while (number > 0) {
+        dig = number % 10;
+        number = number / 10;
+        if (startIndex > end) { // we need to resize as the string needs a number with more chars than original
+            int spaces = 0;
+            int temp = number;
+            for (;temp != 0; temp /= 10) {spaces++;};
+            expand(str, startIndex, spaces + 1, buflen);
+            end += spaces + 1;
+        }
+        (*str)[end--] = dig + '0';
+    }
+    if (startIndex < end) {
+        shrink(*str, startIndex, end - startIndex + 1);
+    }
+}

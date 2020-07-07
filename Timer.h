@@ -4,6 +4,7 @@
 #include <iostream>
 #include <bitset>
 using namespace std::literals::chrono_literals;
+
 struct Timer {
     std::chrono::high_resolution_clock::time_point  start, end;
     static std::chrono::high_resolution_clock::time_point begin;

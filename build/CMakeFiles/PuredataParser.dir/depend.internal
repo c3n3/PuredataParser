@@ -3,4 +3,6 @@
 
 CMakeFiles/PuredataParser.dir/main.cpp.o
  /home/caden/code/cpp/PuredataParser/PuredataFile.h
+ /home/caden/code/cpp/PuredataParser/Timer.h
+ /home/caden/code/cpp/PuredataParser/buffer_functions.h
  /home/caden/code/cpp/PuredataParser/main.cpp
